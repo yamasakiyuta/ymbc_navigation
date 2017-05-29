@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<launch>
+<!-- <master auto="start"/> -->
+<include file="$(find roomba_2dnav)/launch/roomba_tf.launch"/>
+ <!--Run LRF-->
+  <include file="$(find roomba_2dnav)/launch/roomba_hokuyo.launch"/>
+ <!-- Run the map server --> 
+ <node name="map_server" pkg="map_server" type="map_server" args="$(find roomba_2dnav)/maps/map2.yaml"/> 
+ 
+ <!--- Run AMCL -->    
+ <include file="$(find roomba_2dnav)/launch/roomba_amcl_param.launch" />
+
+ <!--- Run move_base -->    
+ <include file="$(find roomba_2dnav)/launch/first_roomba_move_base.launch" />
+ 
+ <node pkg="roomba_500driver_meiji" type="roomba_500driver_meiji" respawn="false" name="roomba_500driver_meiji"/>
+ 
+ <node pkg="chibi16_control" type="chibi16_control" respawn="false" name="chibi16_control"/>
+ 
+ <node pkg="green_cam" type="green_cam_node" respawn="false" name="green_cam_node"/>
+ 
+ <node pkg="green_image" type="green_image_node" respawn="false" name="green_image_node" />
+ 
+ <node pkg="qrcode_reader" type="qrcode_reader_node" respawn="false" name="qrcode_reader_node" />
+ 
+ <node pkg="object_distance" type="object_distance_node" respawn="false" name="object_distance_node"/>
+
+ <node pkg="qr_detection" type="qr_detection_node" respawn="false" name="qr_detection_node"/>
+ 
+ <node pkg="patrol" type="patrol_node" respawn="false" name="patrol_node"/>
+ 
+ <!--node pkg="waypoint" type="waypoint_node" respawn="false" name="waypoint_node" launch-prefix="xterm -e "/-->
+
+ <node pkg="clear_costmap" type="clear_costmap_node" respawn="false" name="clear_costmap_node"/>
+
+
+ <node pkg="rosserial_python" type="serial_node.py" name="serial_node">
+    <param name="port" value="/dev/ttyACM1"/>
+ </node>
+
+
+</launch>

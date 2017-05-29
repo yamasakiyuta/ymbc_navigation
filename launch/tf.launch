@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<launch>
+    <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser" args="0 0 0 0 0 0 /base_link /laser 100"/>
+
+    <node pkg="tf" type="static_transform_publisher" name="laser_to_cloud" args="0 0 0 0 0 0 /laser /cloud 100"/>
+
+    <node pkg="tf" type="static_transform_publisher" name="base_link_to_odom_combined" args="0 0 0 0 0 0 /base_link /odom_combined 100"/>
+</launch>

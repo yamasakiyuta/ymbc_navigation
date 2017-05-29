@@ -1,0 +1,50 @@
+DWAPlannerROS:
+
+#ロボットパラメータ設定 (Kobuki)
+
+max_vel_x: 0.5 #x軸の最大速度 (meter/sec)
+min_vel_x: 0.0 #x軸の最小速度 (meter/sec)
+
+max_vel_y: 0.0 #全方向ロボットの場合に設定
+min_vel_y: 0.0 #全方向ロボットの場合に設定
+
+max_trans_vel: 0.5 #最大並進速度 (meter/sec)
+min_trans_vel: 0.1 #最小並進速度 (meter/sec)
+
+trans_stopped_vel: 0.1 #停止並進速度 (meter/sec)
+
+max_rot_vel: 5.0 #最大回転速度 (radian/sec)
+min_rot_vel: 0.4 #最小回転速度 (radian/sec)
+
+rot_stopped_vel: 0.4 #停止回転速度 (radian/sec)
+
+acc_lim_x: 1.0 #x軸加速度制限 (meter/sec 2)
+acc_lim_y: 0.0 #y軸加速度制限 (meter/sec 2)
+
+#目標地点の許容誤差
+yaw_goal_tolerance: 0.3 #yaw軸の角度許容誤差 (radian)
+xy_goal_tolerance: 0.15 #x、y座標の距離許容誤差 (meter)
+
+#フォワードシミュレーション (Forward Simulation)パラメータ
+sim_time: 1.0 #フォワードシミュレーション軌跡時間
+vx_samples: 6 #x軸速度空間で探索するサンプル数
+vy_samples: 1 #y軸速度空間で探索するサンプル数
+vtheta_samples: 20 #yaw軸速度空間で探索するサンプル数
+
+#軌跡スクロールパラメータ (軌跡評価)
+path_distance_bias: 64.0 #コントローラのパス追従の重み
+goal_distance_bias: 24.0 #目標地点と制御速度に近いかどうかの重み
+occdist_scale: 0.5 #障害物回避のための重み
+forward_point_distance: 0.325 #ロボットから追加スクロール点との距離 (meter)
+stop_time_buffer: 0.2 #ロボット停止に必要な時間 (sec)
+scaling_speed: 0.25 #スケーリング速度 (meter/sec)
+max_scaling_factor: 0.2 #最大スケーリング係数
+
+#不安定な挙動 (Oscillation)を防ぐためのパラメータ
+oscillation_reset_dist: 0.05 #oscillationフラグがリセットされる前に、ロボットがどのように移動
+するかの設定
+
+#デバッグ
+publish_traj_pc: true #移動軌跡のデバッグ設定
+publish_cost_grid_pc: true #costmapデバッグ設定
+global_frame_id: odom #グローバルフレームIDの設定
