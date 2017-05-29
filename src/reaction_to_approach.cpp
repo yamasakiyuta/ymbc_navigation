@@ -26,10 +26,13 @@
 #include <dynamic_reconfigure/server.h>
 
 #include <algorithm>
+#include "tf/transform_listener.h"
 
+tf::TransformListener tflistener;
 geometry_msgs::Twist cmd_vel;
 people_msgs::PositionMeasurementArray people;
-double x0=0;
+geometry_msgs::PointStamped peopleRobot;
+geometry_msgs::PointStamped peopleGlobal;
 
 struct velocity
 { 
@@ -38,7 +41,8 @@ struct velocity
 };
 
 velocity people_vel;
-//velocity cmd_vel;
+double dist=0;
+double pre_dist=0;
 
 double distance(double x1, double y1, double x2, double y2)
 {
@@ -48,24 +52,36 @@ double distance(double x1, double y1, double x2, double y2)
 void peopleCallback (const people_msgs::PositionMeasurementArray::ConstPtr& msg)
 {
     people = *msg;
-    if(people.people.empty())ROS_INFO("empty\n");
+    if(people.people.empty()){
+        ROS_INFO("empty\n");
+        cmd_vel.linear.x=0;
+    }
     else{
         for(int i=0;i<people.people.size();i++){
             double x = people.people[i].pos.x;
             double y = people.people[i].pos.y;
+            peopleGlobal.point.x = x;
+            peopleGlobal.point.y = y;
+            peopleGlobal.point.z = 0;
             if(x>-10 && x<10 && y>-2.0 && y<-0.3){
-                ROS_INFO("x=%g, y=%g\n",x,y);
-                people_vel.x = x - x0;
-                if(people_vel.x>0){
+                tflistener.transformPoint("odom",people.people[i].header.stamp,peopleGlobal,"base_link",peopleRobot);
+                ROS_INFO("x=%g, y=%g\n",peopleRobot.point.x,peopleRobot.point.y);
+                dist = distance(0,0,peopleRobot.point.x,peopleRobot.point.y);
+                if((dist-pre_dist)>1.0){
                     ROS_INFO("go\n");
                     cmd_vel.linear.x=0.2;
+                }
+                else if((dist-pre_dist)<=1.0){
+                    ROS_INFO("go\n");
+                    cmd_vel.linear.x=0.1;
                 }
                 else{
                     ROS_INFO("stop\n");
                     cmd_vel.linear.x=0;
                 }
-                x0 = x;
+                pre_dist = dist;
             }
+            else cmd_vel.linear.x=0;
         }
     }
 }
