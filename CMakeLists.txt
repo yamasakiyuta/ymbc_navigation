@@ -151,6 +151,7 @@ include_directories(
 # add_executable(${PROJECT_NAME}_node src/ymbc_navigation_node.cpp)
 add_executable(scan_to_cloud src/scan_to_cloud.cpp)
 add_executable(reaction_to_approach src/reaction_to_approach.cpp)
+add_executable(spur_ps4joy src/spur_ps4joy.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -173,6 +174,9 @@ target_link_libraries(scan_to_cloud
 target_link_libraries(reaction_to_approach
   ${catkin_LIBRARIES}
   ${BFL_LIBRARIES} 
+)
+target_link_libraries(spur_ps4joy
+  ${catkin_LIBRARIES}
 )
 
 #############
