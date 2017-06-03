@@ -26,12 +26,13 @@
 #include <dynamic_reconfigure/server.h>
 
 #include <algorithm>
-#include "tf/transform_listener.h"
 
+sensor_msgs::LaserScan scan_data;
 geometry_msgs::Twist cmd_vel;
 people_msgs::PositionMeasurementArray people;
 geometry_msgs::PointStamped peopleRobot;
 geometry_msgs::PointStamped peopleGlobal;
+geometry_msgs::Point waypoint[10];
 
 struct velocity
 { 
@@ -45,7 +46,12 @@ double pre_dist=0;
 double pre_x=0;
 const static double x_thresh=0.005;
 const static double vel_x=0.6;
-const static double range[5][2]={{5,-0.3},{5,-3.0},{0,-3.0},{0,-0.3},{5,-0.3}};
+const static double range[5][2]={{6,0.5},{6,-2.0},{-1.0,-2.0},{-1.0,0.5},{6,0.5}};
+int wp_num=0;
+double wp_x[4]={1.0,4.0,1.0,4.0};
+double wp_y[4]={-1.5,-1.5,-1.5,-1.5};
+double wp_yaw[4]={0,-M_PI/2,-M_PI/2,-M_PI};
+int stop_flag=0;
 
 double distance(double x1, double y1, double x2, double y2)
 {
@@ -55,6 +61,22 @@ double distance(double x1, double y1, double x2, double y2)
 void peopleCallback (const people_msgs::PositionMeasurementArray::ConstPtr& msg)
 {
     people = *msg;
+}
+
+void scanCallback (const sensor_msgs::LaserScan::ConstPtr& scan_in)
+{
+    scan_data = *scan_in;
+    for(int i=0;i<682;i++){
+        if((double)scan_data.ranges[i]<0.2 && (double)scan_data.ranges[i]>0.05){
+            cmd_vel.linear.x=0;
+            cmd_vel.angular.z=0;
+            stop_flag=1;
+            break;
+        }
+        else{
+            stop_flag=0;
+        }
+    }
 }
 
 void search_range_marker(const visualization_msgs::Marker& line_strip){
@@ -70,6 +92,7 @@ int main(int argc, char **argv)
     ros::Publisher search_range_pub = public_node_handle.advertise<visualization_msgs::Marker>("search_range_marker", 10);
     ros::Publisher tracking_pub = public_node_handle.advertise<visualization_msgs::Marker>("my_tracking_marker", 10);
     ros::Subscriber laser_sub = public_node_handle.subscribe<people_msgs::PositionMeasurementArray>("people_tracker_measurements", 1, peopleCallback);
+    ros::Subscriber scan_sub = public_node_handle.subscribe<sensor_msgs::LaserScan>("scan", 1, scanCallback);
     
     tf::TransformListener listener;
   
@@ -79,7 +102,7 @@ int main(int argc, char **argv)
     {
         ////////////visualization/////////////////////////////////////////
         visualization_msgs::Marker line_strip;
-        line_strip.header.frame_id = "/odom";
+        line_strip.header.frame_id = "/map";
         line_strip.header.stamp = ros::Time::now();
         line_strip.ns = "lines";
         line_strip.action = visualization_msgs::Marker::ADD;
@@ -101,7 +124,7 @@ int main(int argc, char **argv)
         search_range_pub.publish(line_strip);
         //////////////////////////////////////////////
         visualization_msgs::Marker points;
-        points.header.frame_id = "/odom";
+        points.header.frame_id = "/map";
         points.header.stamp = ros::Time::now();
         points.ns = "points";
         points.action = visualization_msgs::Marker::ADD;
@@ -117,7 +140,7 @@ int main(int argc, char **argv)
 
         tf::StampedTransform transform;
         try{
-            listener.lookupTransform("/odom", "/base_link", ros::Time(0), transform);
+            listener.lookupTransform("/map", "/base_link", ros::Time(0), transform);
         }
         catch (tf::TransformException &ex){
             ROS_ERROR("%s",ex.what());
@@ -126,17 +149,19 @@ int main(int argc, char **argv)
         }
         //ROS_INFO("x=%g\n",transform.getOrigin().x());
     if(people.people.empty()){
-        ROS_INFO("stop(empty)\n");
-        cmd_vel.linear.x=0;
+        //ROS_INFO("stop(empty)\n");
+        cmd_vel.linear.x=0.15;
     }
     else{
         //ROS_INFO("%d\n",people.people.size());
         for(int i=0;i<=people.people.size();i++){
             double x = people.people[i].pos.x;
             double y = people.people[i].pos.y;
-            double xGL = x+transform.getOrigin().x();
-            double yGL = y+transform.getOrigin().y();
-            ROS_INFO("%g, %g\n",x,y);
+            double yaw = tf::getYaw(transform.getRotation());
+
+            double xGL = distance(0,0,x,y)*cos(yaw+atan2(y,x))+transform.getOrigin().x();
+            double yGL = distance(0,0,x,y)*sin(yaw+atan2(y,x))+transform.getOrigin().y();
+            //ROS_INFO("%g, %g\n",x,y);
             if(xGL>range[2][0] && xGL<range[0][0] && yGL>range[1][1] && yGL<range[3][1]){
             //if(x>-5 && x<5 && y>-2.0 && y<-0.3){
                 dist = distance(0,0,x,y);
@@ -149,11 +174,11 @@ int main(int argc, char **argv)
                 //ROS_INFO("x=%g\n",transform.getOrigin().x());
                 //ROS_INFO("y=%g\n",transform.getOrigin().y());
                 if((dist-pre_dist)>x_thresh){
-                    ROS_INFO("go\n");
+                    //ROS_INFO("go\n");
                     cmd_vel.linear.x=vel_x;
                 }
                 else{
-                    ROS_INFO("stop\n");
+                    //ROS_INFO("stop\n");
                     cmd_vel.linear.x=0;
                 }
                 /*if(x>0){//人がロボットより前にいる時
@@ -182,8 +207,8 @@ int main(int argc, char **argv)
                 }
                 ROS_INFO("x:%g, pre_x:%g\n",x, pre_x);
                 ROS_INFO("%g\n",x-pre_x);*/
-                ROS_INFO("dist:%g, pre_dist:%g\n",dist, pre_dist);
-                ROS_INFO("%g\n",dist-pre_dist);
+                //ROS_INFO("dist:%g, pre_dist:%g\n",dist, pre_dist);
+                //ROS_INFO("%g\n",dist-pre_dist);
                 pre_dist = dist;
                 pre_x = x;
                 break;
@@ -193,16 +218,79 @@ int main(int argc, char **argv)
                 break;
             }
             else{
-                cmd_vel.linear.x=0;
-                ROS_INFO("stop(no legs)\n");
+                cmd_vel.linear.x=0.15;
+                //ROS_INFO("stop(no legs in the area)\n");
             }
         }
         tracking_pub.publish(points);
     }
-        
-        vel_pub.publish(cmd_vel);
-        ros::spinOnce();
-        rate.sleep();
+    if(cmd_vel.linear.x!=0){
+        double robot_yaw = tf::getYaw(transform.getRotation());
+        double robot_x = transform.getOrigin().x();
+        double robot_y = transform.getOrigin().y();
+        double dtheta = atan2(wp_y[wp_num]-robot_y, wp_x[wp_num]-robot_x)-robot_yaw;
+        double dist_wp=distance(transform.getOrigin().x(),transform.getOrigin().y(),wp_x[wp_num],wp_y[wp_num]);
+        double yaw_wp = tf::getYaw(transform.getRotation());
+        double dx=dist_wp*cos(dtheta);
+        double dy=dist_wp*sin(dtheta);
+        //ROS_INFO("tf: %g, %g, %g\n",transform.getOrigin().x(), transform.getOrigin().y(),tf::getYaw(transform.getRotation())*180/M_PI );
+        ROS_INFO("after: %g, %g, %g\n",dx, dy,dtheta );
+        ROS_INFO("%g, %g\n",wp_x[wp_num], wp_y[wp_num] );
+
+        if(dist_wp>0.3){
+            if(cmd_vel.linear.x!=0.15){
+              if(fabs(dy)>0.1){
+                  cmd_vel.angular.z=dy*0.5;
+                  cmd_vel.linear.x=0.1;
+              }
+              else{
+                  cmd_vel.angular.z=dy*0.2;
+                  cmd_vel.linear.x=0.5;
+              }
+            }
+            else{
+              if(fabs(dy)>0.1){
+                  cmd_vel.angular.z=dy*0.2;
+                  cmd_vel.linear.x=0.01;
+              }
+              else{
+                  cmd_vel.angular.z=dy*0.2;
+                  cmd_vel.linear.x=0.01;
+              }
+            }
+        }
+        else{
+            /*if(cmd_vel.linear.x!=0.15){
+            //ROS_INFO("yaw:%g\n",yaw_wp);
+            if(fabs(dy)>0.05){
+                cmd_vel.linear.x=0;
+                cmd_vel.angular.z=0.3*dy;
+            }
+            else{*/
+            wp_num++;
+            ROS_INFO("%d\n",wp_num);
+            cmd_vel.linear.x=0;
+            cmd_vel.angular.z=0;
+            //}
+            //}
+        }
+    }
+       
+    if(wp_num>3){
+        cmd_vel.linear.x=0;
+        cmd_vel.angular.z=0;
+        wp_num=0;
+    }
+    
+    if(stop_flag){
+        cmd_vel.linear.x=0;
+        cmd_vel.angular.z=0;
+        ROS_INFO("STOP\n");
+    }
+    //cmd_vel.linear.x=0;
+    vel_pub.publish(cmd_vel);
+    ros::spinOnce();
+    rate.sleep();
     }
     return 0;
 } 
