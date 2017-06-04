@@ -181,32 +181,8 @@ int main(int argc, char **argv)
                     //ROS_INFO("stop\n");
                     cmd_vel.linear.x=0;
                 }
-                /*if(x>0){//人がロボットより前にいる時
-                //if(x>transform.getOrigin().x()){
-                    ROS_INFO("front\n");
-                    if((x-pre_x)>x_thresh){//遠ざかっていたら進む
-                        ROS_INFO("go\n");
-                        cmd_vel.linear.x=vel_x;
-                    }
-                    else{
-                        //ROS_INFO("stop\n");
-                        cmd_vel.linear.x=0;
-                    }
-                }
-                else{//人がロボットより後ろにいる時
-                    ROS_INFO("behind\n");
-                    if((x-pre_x)<-x_thresh){
-                        ROS_INFO("go\n");
-                        cmd_vel.linear.x=vel_x;
-                    }
-                    else{
-                        //ROS_INFO("stop\n");
-                        cmd_vel.linear.x=0;
-                    }
-                    //cmd_vel.linear.x=0;
-                }
                 ROS_INFO("x:%g, pre_x:%g\n",x, pre_x);
-                ROS_INFO("%g\n",x-pre_x);*/
+                ROS_INFO("%g\n",x-pre_x);
                 //ROS_INFO("dist:%g, pre_dist:%g\n",dist, pre_dist);
                 //ROS_INFO("%g\n",dist-pre_dist);
                 pre_dist = dist;
@@ -260,19 +236,10 @@ int main(int argc, char **argv)
             }
         }
         else{
-            /*if(cmd_vel.linear.x!=0.15){
-            //ROS_INFO("yaw:%g\n",yaw_wp);
-            if(fabs(dy)>0.05){
-                cmd_vel.linear.x=0;
-                cmd_vel.angular.z=0.3*dy;
-            }
-            else{*/
             wp_num++;
             ROS_INFO("%d\n",wp_num);
             cmd_vel.linear.x=0;
             cmd_vel.angular.z=0;
-            //}
-            //}
         }
     }
        
